@@ -3,29 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雲端記帳系統 - 登入/註冊</title>
+    <title>雲端記帳系統</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f6;
             display: flex;
             justify-content: center;
-            align-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
         }
         .container {
             background-color: #fff;
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            width: 350px;
+            width: 100%;
+            max-width: 500px;
         }
-        h2 {
+        h2, h3 {
             text-align: center;
-            margin-bottom: 20px;
             color: #333;
+            margin-top: 0;
         }
         .form-group {
             margin-bottom: 15px;
@@ -35,12 +37,13 @@
             margin-bottom: 5px;
             color: #666;
         }
-        input {
+        input, select {
             width: 100%;
             padding: 10px;
             box-sizing: border-box;
             border: 1px solid #ddd;
             border-radius: 4px;
+            font-size: 14px;
         }
         button {
             width: 100%;
@@ -53,9 +56,7 @@
             cursor: pointer;
             margin-top: 10px;
         }
-        button:hover {
-            background-color: #4cae4c;
-        }
+        button:hover { background-color: #4cae4c; }
         .toggle-link {
             text-align: center;
             margin-top: 15px;
@@ -68,6 +69,24 @@
             margin-top: 15px;
             font-weight: bold;
         }
+        /* 記帳紀錄表格樣式 */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            font-size: 14px;
+        }
+        th { background-color: #f2f2f2; }
+        .logout-btn {
+            background-color: #d9534f;
+            margin-top: 20px;
+        }
+        .logout-btn:hover { background-color: #c9302c; }
     </style>
 </head>
 <body>
@@ -76,11 +95,11 @@
     <div id="register-box">
         <h2>建立新帳號</h2>
         <div class="form-group">
-            <label for="reg-username">帳號</label>
+            <label>帳號</label>
             <input type="text" id="reg-username" placeholder="請輸入帳號">
         </div>
         <div class="form-group">
-            <label for="reg-password">密碼</label>
+            <label>密碼</label>
             <input type="password" id="reg-password" placeholder="請輸入密碼">
         </div>
         <button id="btn-register">確認註冊</button>
@@ -90,47 +109,90 @@
     <div id="login-box" style="display: none;">
         <h2>會員登入</h2>
         <div class="form-group">
-            <label for="login-username">帳號</label>
+            <label>帳號</label>
             <input type="text" id="login-username" placeholder="請輸入帳號">
         </div>
         <div class="form-group">
-            <label for="login-password">密碼</label>
+            <label>密碼</label>
             <input type="password" id="login-password" placeholder="請輸入密碼">
         </div>
         <button id="btn-login" style="background-color: #007bff;">登入</button>
         <div class="toggle-link" onclick="switchBox('register')">沒有帳號？前往註冊</div>
     </div>
 
+    <div id="accounting-box" style="display: none;">
+        <h2>歡迎回來，<span id="user-display" style="color: #007bff;"></span>！</h2>
+        <hr>
+        <h3>新增消費紀錄</h3>
+        <div class="form-group">
+            <label>金額 (TWD)</label>
+            <input type="number" id="acc-amount" placeholder="例如：150">
+        </div>
+        <div class="form-group">
+            <label>消費項目說明</label>
+            <input type="text" id="acc-desc" placeholder="例如：油錢、晚餐、手搖飲">
+        </div>
+        <div class="form-group">
+            <label>分類</label>
+            <select id="acc-category">
+                <option value="飲食">飲食</option>
+                <option value="交通">交通</option>
+                <option value="娛樂">娛樂</option>
+                <option value="日常用品">日常用品</option>
+                <option value="其他">其他</option>
+            </select>
+        </div>
+        <button id="btn-add-record" style="background-color: #28a745;">儲存此筆帳目</button>
+
+        <h3 style="margin-top: 30px;">我的消費歷史紀錄</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>分類</th>
+                    <th>說明</th>
+                    <th>金額</th>
+                </tr>
+            </thead>
+            <tbody id="record-list-body">
+                </tbody>
+        </table>
+        
+        <button class="logout-btn" onclick="logout()">登出帳號</button>
+    </div>
+
     <div class="message" id="msg-box"></div>
 </div>
 
 <script>
-    // 切換 登入/註冊 區塊
+    // 全域變數，用來記住目前登入的使用者 ID
+    let currentUserId = null;
+
     function switchBox(type) {
         const regBox = document.getElementById('register-box');
         const loginBox = document.getElementById('login-box');
-        document.getElementById('msg-box').innerText = ''; // 清空提示訊息
+        const accBox = document.getElementById('accounting-box');
+        document.getElementById('msg-box').innerText = '';
         
         if (type === 'login') {
             regBox.style.display = 'none';
             loginBox.style.display = 'block';
+            accBox.style.display = 'none';
+        } else if (type === 'accounting') {
+            regBox.style.display = 'none';
+            loginBox.style.display = 'none';
+            accBox.style.display = 'block';
         } else {
             regBox.style.display = 'block';
             loginBox.style.display = 'none';
+            accBox.style.display = 'none';
         }
     }
 
-    // 實作註冊點擊事件
+    // 實作註冊
     document.getElementById('btn-register').addEventListener('click', async () => {
         const username = document.getElementById('reg-username').value;
         const password = document.getElementById('reg-password').value;
         const msgBox = document.getElementById('msg-box');
-
-        if (!username || !password) {
-            msgBox.style.color = 'red';
-            msgBox.innerText = '請輸入帳號與密碼！';
-            return;
-        }
 
         try {
             const response = await fetch('/api/auth/register', {
@@ -138,12 +200,10 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
-
             const data = await response.json();
-
             if (response.ok) {
                 msgBox.style.color = 'green';
-                msgBox.innerText = data.message + ' 3秒後自動幫你切換到登入畫面。';
+                msgBox.innerText = '註冊成功！3秒後前往登入頁。';
                 setTimeout(() => switchBox('login'), 3000);
             } else {
                 msgBox.style.color = 'red';
@@ -151,21 +211,15 @@
             }
         } catch (err) {
             msgBox.style.color = 'red';
-            msgBox.innerText = '連線失敗，請檢查網路或伺服器。';
+            msgBox.innerText = '連線失敗';
         }
     });
 
-    // 實作登入點擊事件
+    // 實作登入
     document.getElementById('btn-login').addEventListener('click', async () => {
         const username = document.getElementById('login-username').value;
         const password = document.getElementById('login-password').value;
         const msgBox = document.getElementById('msg-box');
-
-        if (!username || !password) {
-            msgBox.style.color = 'red';
-            msgBox.innerText = '請輸入帳號與密碼！';
-            return;
-        }
 
         try {
             const response = await fetch('/api/auth/login', {
@@ -173,21 +227,94 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, password })
             });
-
             const data = await response.json();
-
             if (response.ok) {
-                msgBox.style.color = 'green';
-                msgBox.innerText = '🎉 登入成功！歡迎回來。';
+                currentUserId = data.user.id; // 📌 記住登入者的 ID
+                document.getElementById('user-display').innerText = data.user.username;
+                switchBox('accounting'); // 跳轉到記帳主頁
+                fetchRecords(); // 立即撈取該使用者的歷史記帳紀錄
             } else {
                 msgBox.style.color = 'red';
                 msgBox.innerText = data.message;
             }
         } catch (err) {
             msgBox.style.color = 'red';
-            msgBox.innerText = '連線失敗，請檢查網路或伺服器。';
+            msgBox.innerText = '連線失敗';
         }
     });
+
+    // ➕ 實作新增一筆記帳資料
+    document.getElementById('btn-add-record').addEventListener('click', async () => {
+        const amount = document.getElementById('acc-amount').value;
+        const description = document.getElementById('acc-desc').value;
+        const category = document.getElementById('acc-category').value;
+        const msgBox = document.getElementById('msg-box');
+
+        if (!amount || !description) {
+            msgBox.style.color = 'red';
+            msgBox.innerText = '請填寫金額與消費說明！';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/records', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: currentUserId, amount, description, category })
+            });
+            
+            if (response.ok) {
+                msgBox.style.color = 'green';
+                msgBox.innerText = '記帳成功！';
+                // 清空輸入欄位
+                document.getElementById('acc-amount').value = '';
+                document.getElementById('acc-desc').value = '';
+                // 重新載入最新清單
+                fetchRecords();
+            } else {
+                msgBox.style.color = 'red';
+                msgBox.innerText = '儲存失敗';
+            }
+        } catch (err) {
+            msgBox.style.color = 'red';
+            msgBox.innerText = '連線錯誤';
+        }
+    });
+
+    // 🔍 實作從後端撈取記帳清單並渲染到畫面上
+    async function fetchRecords() {
+        if (!currentUserId) return;
+        try {
+            const response = await fetch(`/api/records/${currentUserId}`);
+            const records = await response.json();
+            
+            const tbody = document.getElementById('record-list-body');
+            tbody.innerHTML = ''; // 先清空舊表格
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; color:#999;">目前尚無消費紀錄。</td></tr>`;
+                return;
+            }
+
+            // 跑迴圈把每一筆紀錄塞進 HTML 裡面
+            records.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${item.category}</td>
+                    <td>${item.description}</td>
+                    <td style="font-weight:bold; color:#d9534f;">$${item.amount}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        } catch (err) {
+            console.error('撈取歷史紀錄失敗:', err);
+        }
+    }
+
+    function logout() {
+        currentUserId = null;
+        switchBox('login');
+    }
 </script>
 
 </body>

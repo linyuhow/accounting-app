@@ -17,14 +17,15 @@ app.get('/api/test', (req, res) => {
     res.json({ message: '後端伺服器運作正常！' });
 });
 
-// 連接 MongoDB 資料庫
+// 先讓伺服器啟動，把 Port 綁定好給 Render 偵測
+app.listen(PORT, () => {
+    console.log(`伺服器成功啟動在：http://localhost:${PORT}`);
+});
+
+// 獨立連接 MongoDB 資料庫
 mongoose.connect(process.env.MONGODB_URI)
     .then(() => {
         console.log('MongoDB 資料庫連線成功！');
-        // 資料庫連線成功後，才啟動伺服器
-        app.listen(PORT, () => {
-            console.log(`伺服器成功啟動在：http://localhost:${PORT}`);
-        });
     })
     .catch(err => {
         console.error('資料庫連線失敗：', err);

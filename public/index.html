@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>雲端記帳系統 - 登入/註冊</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            width: 350px;
+        }
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #5cb85c;
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #4cae4c;
+        }
+        .toggle-link {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #007bff;
+            cursor: pointer;
+        }
+        .message {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 註冊區塊 (預設顯示) -->
+    <div id="register-box">
+        <h2>建立新帳號</h2>
+        <div class="form-group">
+            <label for="reg-username">帳號</label>
+            <input type="text" id="reg-username" placeholder="請輸入帳號">
+        </div>
+        <div class="form-group">
+            <label for="reg-password">密碼</label>
+            <input type="password" id="reg-password" placeholder="請輸入密碼">
+        </div>
+        <button id="btn-register">確認註冊</button>
+        <div class="toggle-link" onclick="switchBox('login')">已有帳號？前往登入</div>
+    </div>
+
+    <!-- 登入區塊 (預設隱藏) -->
+    <div id="login-box" style="display: none;">
+        <h2>會員登入</h2>
+        <div class="form-group">
+            <label for="login-username">帳號</label>
+            <input type="text" id="login-username" placeholder="請輸入帳號">
+        </div>
+        <div class="form-group">
+            <label for="login-password">密碼</label>
+            <input type="password" id="login-password" placeholder="請輸入密碼">
+        </div>
+        <button id="btn-login" style="background-color: #007bff;">登入</button>
+        <div class="toggle-link" onclick="switchBox('register')">沒有帳號？前往註冊</div>
+    </div>
+
+    <!-- 訊息提示區 -->
+    <div class="message" id="msg-box"></div>
+</div>
+
+<script>
+    // 切換 登入/註冊 區塊
+    function switchBox(type) {
+        const regBox = document.getElementById('register-box');
+        const loginBox = document.getElementById('login-box');
+        document.getElementById('msg-box').innerText = ''; // 清空提示訊息
+        
+        if (type === 'login') {
+            regBox.style.display = 'none';
+            loginBox.style.display = 'block';
+        } else {
+            regBox.style.display = 'block';
+            loginBox.style.display = 'none';
+        }
+    }
+
+    // 實作註冊點擊事件
+    document.getElementById('btn-register').addEventListener('click', async () => {
+        const username = document.getElementById('reg-username').value;
+        const password = document.getElementById('reg-password').value;
+        const msgBox = document.getElementById('msg-box');
+
+        try {
+            // 發送 POST 請求到我們剛剛寫好的後端註冊 API
+            const response = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                msgBox.style.color = 'green';
+                msgBox.innerText = data.message + ' 3秒後自動幫你切換到登入畫面。';
+                setTimeout(() => switchBox('login'), 3000);
+            } else {
+                msgBox.style.color = 'red';
+                msgBox.innerText = data.message;
+            }
+        } catch (err) {
+            msgBox.style.color = 'red';
+            msgBox.innerText = '連線失敗，請檢查網路或伺服器。';
+        }
+    });
+</script>
+
+</body>
+</html>

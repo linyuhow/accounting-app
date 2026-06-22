@@ -73,7 +73,6 @@
 <body>
 
 <div class="container">
-    <!-- 註冊區塊 (預設顯示) -->
     <div id="register-box">
         <h2>建立新帳號</h2>
         <div class="form-group">
@@ -88,7 +87,6 @@
         <div class="toggle-link" onclick="switchBox('login')">已有帳號？前往登入</div>
     </div>
 
-    <!-- 登入區塊 (預設隱藏) -->
     <div id="login-box" style="display: none;">
         <h2>會員登入</h2>
         <div class="form-group">
@@ -103,7 +101,6 @@
         <div class="toggle-link" onclick="switchBox('register')">沒有帳號？前往註冊</div>
     </div>
 
-    <!-- 訊息提示區 -->
     <div class="message" id="msg-box"></div>
 </div>
 
@@ -129,8 +126,13 @@
         const password = document.getElementById('reg-password').value;
         const msgBox = document.getElementById('msg-box');
 
+        if (!username || !password) {
+            msgBox.style.color = 'red';
+            msgBox.innerText = '請輸入帳號與密碼！';
+            return;
+        }
+
         try {
-            // 發送 POST 請求到我們剛剛寫好的後端註冊 API
             const response = await fetch('/api/auth/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -143,6 +145,40 @@
                 msgBox.style.color = 'green';
                 msgBox.innerText = data.message + ' 3秒後自動幫你切換到登入畫面。';
                 setTimeout(() => switchBox('login'), 3000);
+            } else {
+                msgBox.style.color = 'red';
+                msgBox.innerText = data.message;
+            }
+        } catch (err) {
+            msgBox.style.color = 'red';
+            msgBox.innerText = '連線失敗，請檢查網路或伺服器。';
+        }
+    });
+
+    // 實作登入點擊事件
+    document.getElementById('btn-login').addEventListener('click', async () => {
+        const username = document.getElementById('login-username').value;
+        const password = document.getElementById('login-password').value;
+        const msgBox = document.getElementById('msg-box');
+
+        if (!username || !password) {
+            msgBox.style.color = 'red';
+            msgBox.innerText = '請輸入帳號與密碼！';
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                msgBox.style.color = 'green';
+                msgBox.innerText = '🎉 登入成功！歡迎回來。';
             } else {
                 msgBox.style.color = 'red';
                 msgBox.innerText = data.message;

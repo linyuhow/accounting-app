@@ -35,7 +35,7 @@ app.post('/api/auth/register', async (req, res) => {
             return res.status(400).json({ message: '帳號與密碼皆為必填項目！' });
         }
 
-        // 檢查資料庫有沒有成功連上，若沒連上不執行查詢避免當機
+        // 檢查資料庫有沒有成功連上
         if (mongoose.connection.readyState !== 1) {
             return res.status(500).json({ message: '伺服器目前與資料庫失去連線，請稍後再試。' });
         }
@@ -66,7 +66,45 @@ app.post('/api/auth/register', async (req, res) => {
 });
 
 // ==========================================
-// 3. 啟動伺服器並綁定 Port (確保 Render 優先偵測到)
+// 3. 會員登入 API
+// ==========================================
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+
+        // 檢查欄位
+        if (!username || !password) {
+            return res.status(400).json({ message: '帳號與密碼皆為必填項目！' });
+        }
+
+        // 檢查資料庫連線
+        if (mongoose.connection.readyState !== 1) {
+            return res.status(500).json({ message: '伺服器目前與資料庫失去連線，請稍後再試。' });
+        }
+
+        // 尋找使用者
+        const user = await User.findOne({ username });
+        if (!user) {
+            return res.status(400).json({ message: '帳號或密碼錯誤！' }); // 找不到帳號
+        }
+
+        // 比較加密後的密碼是否相符
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: '帳號或密碼錯誤！' }); // 密碼對不起來
+        }
+
+        // 驗證成功
+        res.json({ message: '登入成功！', user: { id: user._id, username: user.username } });
+
+    } catch (err) {
+        console.error('登入 API 發生錯誤:', err);
+        res.status(500).json({ message: '伺服器錯誤，請稍後再試。' });
+    }
+});
+
+// ==========================================
+// 4. 啟動伺服器並綁定 Port
 // ==========================================
 app.listen(PORT, () => {
     console.log(`=== 伺服器啟動成功 ===`);
@@ -75,11 +113,11 @@ app.listen(PORT, () => {
 });
 
 // ==========================================
-// 4. 診斷與連接 MongoDB 資料庫
+// 5. 連接 MongoDB 資料庫
 // ==========================================
 console.log("=== 雲端環境變數檢查 ===");
 if (!process.env.MONGODB_URI) {
-    console.error("❌ 警告: 找不到 MONGODB_URI 環境變數！請檢查 Render 的 Environment 設定。");
+    console.error("❌ 警告: 找不到 MONGODB_URI 環境變數！");
 } else {
     console.log("✅ 成功讀取 MONGODB_URI，字串長度為:", process.env.MONGODB_URI.length);
 }
